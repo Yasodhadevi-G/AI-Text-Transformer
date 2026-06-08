@@ -29,8 +29,7 @@ Rules:
 
 ${input}
 `;
-  }
-
+}
 
 export async function POST(req) {
   try {
@@ -56,20 +55,41 @@ export async function POST(req) {
       target
     );
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: prompt,
-    });
+    let response;
+
+    try {
+      response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+      });
+    } catch (error) {
+      console.error("Gemini API Error:", error);
+
+      if (error.status === 503) {
+        return Response.json(
+          {
+            error:
+              "Gemini is currently experiencing high demand. Please try again in a few moments.",
+          },
+          {
+            status: 503,
+          }
+        );
+      }
+
+      throw error;
+    }
 
     return Response.json({
       output: response.text,
     });
+
   } catch (err) {
-    console.error("Gemini Error:", err);
+    console.error("Server Error:", err);
 
     return Response.json(
       {
-        error: err.message || "Server Error",
+        error: err.message || "Internal Server Error",
       },
       {
         status: 500,
